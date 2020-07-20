@@ -1,5 +1,9 @@
 package com.example.finalnewsapp.repositories;
 
+import android.nfc.Tag;
+import android.util.Log;
+import android.widget.Toast;
+
 import androidx.lifecycle.MutableLiveData;
 
 import com.example.finalnewsapp.Constant;
@@ -10,6 +14,14 @@ import com.example.finalnewsapp.model.NewsRespnse.NewsResponse;
 
 import java.util.List;
 
+import io.reactivex.Observable;
+import io.reactivex.Observer;
+import io.reactivex.Scheduler;
+import io.reactivex.Single;
+import io.reactivex.SingleObserver;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.schedulers.Schedulers;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -19,48 +31,41 @@ public class NewsRepository {
     public MutableLiveData<List<ArticlesItem>> articlesItem = new MutableLiveData<>();
 
     public void getNewsSources(String sourceId){
-        APIManager.getApis().getNewsBySourceId(Constant.API_KEY,sourceId)
-                .enqueue(new Callback<NewsResponse>() {
-                    @Override
-                    public void onResponse(Call<NewsResponse> call, Response<NewsResponse> response) {
-                        if ("ok".equals(response.body().status)) {
-                            cacheNews(response.body().articles);
-                            articlesItem.setValue(response.body().articles);
+        Single observable = APIManager.getApis().getNewsBySourceId(Constant.API_KEY,sourceId)
+                .subscribeOn(Schedulers.computation())
+                .map(newsResponse -> {
+                    cacheNews(newsResponse.articles);
+                    return newsResponse;
+                })
+                .observeOn(Schedulers.io());
 
-                        }
-                    }
+        SingleObserver<NewsResponse> singleObserver = new SingleObserver<NewsResponse>() {
+            @Override
+            public void onSubscribe(Disposable d) {
 
-                    @Override
-                    public void onFailure(Call<NewsResponse> call, Throwable t) {
-                        getNewsFromCache();
-                    }
-                });
+            }
+
+            @Override
+            public void onSuccess(NewsResponse newsResponse) {
+                articlesItem.postValue(newsResponse.getArticles());
+            }
+
+            @Override
+            public void onError(Throwable e) {
+                getNewsFromCache();
+            }
+        };
+        observable.subscribe(singleObserver);
     }
 
     private void getNewsFromCache() {
-        getNewsThread thread = new getNewsThread();
-        thread.start();
+        List<ArticlesItem> articlesItemList = MyDataBase.getInstance()
+                .newsDao().getAllArticles();
+        articlesItem.postValue(articlesItemList);
     }
 
     private void cacheNews(final List<ArticlesItem> articles) {
-
-        Thread thread = new Thread(){
-            @Override
-            public void run() {
-                super.run();
-                MyDataBase.getInstance().newsDao().addAllArticles(articles);
-            }
-        };
-        thread.start();
+        MyDataBase.getInstance().newsDao().addAllArticles(articles);
     }
 
-    public class getNewsThread extends Thread{
-        @Override
-        public void run() {
-            super.run();
-            List<ArticlesItem> articlesItemList = MyDataBase.getInstance()
-                    .newsDao().getAllArticles();
-            articlesItem.postValue(articlesItemList);
-        }
-    }
 }

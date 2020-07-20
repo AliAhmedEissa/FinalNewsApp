@@ -1,9 +1,10 @@
 package com.example.finalnewsapp.main;
 
 import android.os.Bundle;
-import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
@@ -22,12 +23,15 @@ import com.google.android.material.tabs.TabLayout;
 
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
+    Button tryAgainBtn;
+    LinearLayout viewNoData;
     TabLayout tablayout;
     RecyclerView recyclerView;
     ProgressBar progressBar;
     Toolbar toolbar;
+
     NewsAdapter adapter;
     RecyclerView.LayoutManager layoutManager;
 
@@ -42,14 +46,18 @@ public class MainActivity extends AppCompatActivity {
         initRecyclerView();
         observeToLiveData();
         mainViewModel.getNewsSources();
-
     }
 
     public void observeToLiveData() {
         mainViewModel.sourceList.observe(this, new Observer<List<SourcesItem>>() {
             @Override
             public void onChanged(List<SourcesItem> sourcesItems) {
-                initTabLayout(sourcesItems);
+                if (sourcesItems.size() != 0){
+                    viewNoData.setVisibility(View.INVISIBLE);
+                    initTabLayout(sourcesItems);
+                }else{
+                    viewNoData.setVisibility(View.VISIBLE);
+                }
             }
         });
 
@@ -118,62 +126,48 @@ public class MainActivity extends AppCompatActivity {
         mainViewModel.getNewsResourcesById(sourceID);
     }
 
-//    @Override
-//    public boolean onCreateOptionsMenu(Menu menu) {
-//        MenuInflater menuInflater = getMenuInflater();
-//        menuInflater.inflate(R.menu.search_menu, menu);
-//        MenuItem searchItem = menu.findItem(R.id.Search);
-//        SearchView searchView = (SearchView) searchItem.getActionView();
-//        searchView.setQueryHint("Search Here");
-//        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-//            @Override
-//            public boolean onQueryTextSubmit(String s) {
-//                return false;
-//            }
-//
-//            @Override
-//            public boolean onQueryTextChange(String s) {
-//                adapter.getFilter().filter(s);
-//                return false;
-//            }
-//        });
-//        return true;
-//    }
-
     private void initView() {
         tablayout = (TabLayout) findViewById(R.id.tablayout);
         recyclerView = (RecyclerView) findViewById(R.id.recycler_view);
         progressBar = (ProgressBar) findViewById(R.id.progress_bar);
         toolbar = (Toolbar) findViewById(R.id.toolbar);
+        tryAgainBtn = (Button) findViewById(R.id.try_again_btn);
+        tryAgainBtn.setOnClickListener(MainActivity.this);
+        viewNoData = (LinearLayout) findViewById(R.id.view_no_data);
         Click();
     }
 
+    public void Click() {
+        toolbar.setOnMenuItemClickListener(new Toolbar.OnMenuItemClickListener() {
+            @Override
+            public boolean onMenuItemClick(MenuItem item) {
+                if (item.getItemId() == R.id.Search) {
+                    SearchView searchView = (SearchView) item.getActionView();
+                    searchView.setQueryHint("Search Here");
+                    searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+                        @Override
+                        public boolean onQueryTextSubmit(String query) {
+                            return false;
+                        }
 
+                        @Override
+                        public boolean onQueryTextChange(String s) {
+                            adapter.getFilter().filter(s);
+                            return false;
+                        }
 
-    public void Click(){
-            toolbar.setOnMenuItemClickListener(new Toolbar.OnMenuItemClickListener() {
-                @Override
-                public boolean onMenuItemClick(MenuItem item) {
-                    if (item.getItemId() == R.id.Search) {
-                        SearchView searchView = (SearchView) item.getActionView();
-                        searchView.setQueryHint("Search Here");
-                        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-                            @Override
-                            public boolean onQueryTextSubmit(String query) {
-                                return false;
-                            }
-
-                            @Override
-                            public boolean onQueryTextChange(String s) {
-                                adapter.getFilter().filter(s);
-                                return false;
-                            }
-
-                        });
-                    }
-                    return true;
+                    });
                 }
-            });
+                return true;
+            }
+        });
+    }
+
+    @Override
+    public void onClick(View view) {
+        if (view.getId() == R.id.try_again_btn) {
+            mainViewModel.getNewsSources();
+        }
     }
 }
 

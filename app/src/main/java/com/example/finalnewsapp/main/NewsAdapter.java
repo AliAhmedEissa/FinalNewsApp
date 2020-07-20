@@ -29,7 +29,6 @@ public class NewsAdapter extends RecyclerView.Adapter<NewsAdapter.ViewHolder> im
 
     public NewsAdapter(List<ArticlesItem> articles) {
         this.articles = articles;
-        //articlesItemListFull = new ArrayList<>();
     }
 
     @NonNull
@@ -40,8 +39,6 @@ public class NewsAdapter extends RecyclerView.Adapter<NewsAdapter.ViewHolder> im
                 .inflate(R.layout.item_news,parent,false);
         return new ViewHolder(view);
     }
-
-    SourceRepository repository = new SourceRepository();
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
@@ -56,7 +53,6 @@ public class NewsAdapter extends RecyclerView.Adapter<NewsAdapter.ViewHolder> im
 
         if (item.source != null)
             holder.sourceName.setText(item.source.getName());
-
 
         Glide.with(holder.itemView)
                 .load(item.urlToImage)
@@ -108,7 +104,6 @@ public class NewsAdapter extends RecyclerView.Adapter<NewsAdapter.ViewHolder> im
             notifyDataSetChanged();
         }
     };
-
 
     public class ViewHolder extends RecyclerView.ViewHolder {
          TextView sourceName;

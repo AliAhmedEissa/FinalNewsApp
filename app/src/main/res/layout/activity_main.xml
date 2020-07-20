@@ -54,9 +54,8 @@
         />
 
     <include
-        android:id="@+id/no_data_view"
+        android:id="@+id/view_no_data"
         android:visibility="gone"
-        layout="@layout/view_no_data"
-        />
+        layout="@layout/view_no_data" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

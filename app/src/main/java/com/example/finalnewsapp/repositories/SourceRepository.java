@@ -10,54 +10,55 @@ import com.example.finalnewsapp.model.SourceResponse.SourcesItem;
 
 import java.util.List;
 
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
+import io.reactivex.Observable;
+import io.reactivex.Observer;
+import io.reactivex.Single;
+import io.reactivex.SingleObserver;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.functions.Consumer;
+import io.reactivex.schedulers.Schedulers;
 
 public class SourceRepository {
 
     public MutableLiveData<List<SourcesItem>> cacheSourcesList = new MutableLiveData<>();
 
-    public void getSources(){
-        APIManager.getApis().getNewsSource(Constant.API_KEY)
-                .enqueue(new Callback<SourceResponse>() {
-                    @Override
-                    public void onResponse(Call<SourceResponse> call, Response<SourceResponse> response) {
-                        cacheSources(response.body().getSources());
-                        cacheSourcesList.setValue(response.body().getSources());
-                    }
+    public void getSources() {
+        Single observable = APIManager.getApis().getNewsSource(Constant.API_KEY)
+                .subscribeOn(Schedulers.computation())
+                .map(sourceResponse -> {
+                    cacheSources(sourceResponse.getSources());
+                    return sourceResponse;
+                })
+                .observeOn(Schedulers.io());
 
-                    @Override
-                    public void onFailure(Call<SourceResponse> call, Throwable t) {
-                        getSourcesFromCache();
-                    }
-                });
+        SingleObserver singleObserver = new SingleObserver<SourceResponse>() {
+            @Override
+            public void onSubscribe(Disposable d) {
+
+            }
+
+            @Override
+            public void onSuccess(SourceResponse sourceResponse) {
+                cacheSourcesList.postValue(sourceResponse.getSources());
+            }
+
+            @Override
+            public void onError(Throwable e) {
+                getSourcesFromCache();
+            }
+        };
+
+        observable.subscribe(singleObserver);
     }
 
     private void getSourcesFromCache() {
-        getSourceThread thread = new getSourceThread();
-        thread.start();
+        List<SourcesItem> sourcesItems = MyDataBase.getInstance().sourceDao().getAllSources();
+        cacheSourcesList.postValue(sourcesItems);
     }
 
     private void cacheSources(final List<SourcesItem> sources) {
-
-        Thread thread = new Thread(){
-            @Override
-            public void run() {
-                super.run();
-                MyDataBase.getInstance().sourceDao().addAllSources(sources);
-            }
-        };
-        thread.start();
-    }
-
-    public class getSourceThread extends Thread{
-        @Override
-        public void run() {
-            super.run();
-            List<SourcesItem> sourcesItems = MyDataBase.getInstance().sourceDao().getAllSources();
-            cacheSourcesList.postValue(sourcesItems);
-        }
+        MyDataBase.getInstance().sourceDao().addAllSources(sources);
     }
 
 }

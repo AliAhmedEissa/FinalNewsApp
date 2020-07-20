@@ -34,25 +34,4 @@ public class MainViewModel extends ViewModel {
         showProgressBar.setValue(true);
         newsRepository.getNewsSources(sourceID);
     }
-
-    /*
-    APIManager.getApis().getNewsBySourceId(Constant.API_KEY,sourceID)
-                .enqueue(new Callback<NewsResponse>() {
-                    @Override
-                    public void onResponse(Call<NewsResponse> call, Response<NewsResponse> response) {
-                        showProgressBar.setValue(false);
-                        if ("ok".equals(response.body().status)){
-                            newsList.setValue(response.body().articles);
-                        }else {
-                            message.setValue(response.body().getMessage());
-                        }
-                    }
-
-                    @Override
-                    public void onFailure(Call<NewsResponse> call, Throwable t) {
-                        showProgressBar.setValue(false);
-                        message.setValue(t.getLocalizedMessage());
-                    }
-                });
-     */
 }
